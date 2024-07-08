@@ -1,47 +1,28 @@
-<?php
 
-$conn = mysqli_connect('localhost', 'your_db_user', 'your_db_password', 'account');
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
-}
-$encodedData = file_get_contents('php://input');
+
+<?php
+$conn = mysqli_connect('localhost', 'root', ''); 
+$database = mysqli_select_db($conn, 'account');
+
+$encodedData = file_get_contents('php://input');  // take data from react native fetch API
 $decodedData = json_decode($encodedData, true);
 
-if (!isset($decodedData['email']) || !isset($decodedData['password'])) {
-    $response = array("Message" => "Invalid input");
-    echo json_encode($response);
-    exit;
-}
-$UserEmail = mysqli_real_escape_string($conn, $decodedData['email']);
-$UserPW = mysqli_real_escape_string($conn, $decodedData['password']);
+$UserEmail = $decodedData['email'];
+$UserPW = ($decodedData['password']); //password is hashed
 
-// Check if the email exists in the database
 $SQL = "SELECT * FROM users WHERE email = '$UserEmail'";
 $exeSQL = mysqli_query($conn, $SQL);
-
-if (!$exeSQL) {
-    $response = array("Message" => "Query failed: " . mysqli_error($conn));
-    echo json_encode($response);
-    exit;
-}
-
-$checkEmail = mysqli_num_rows($exeSQL);
-
-if ($checkEmail > 0) {
-    // Email exists, verify password
+$checkEmail =  mysqli_num_rows($exeSQL);
+if ($checkEmail != 0) {
     $arrayu = mysqli_fetch_array($exeSQL);
     $hashedPasswordFromDB = $arrayu['Password'];
-
     if (password_verify($UserPW, $hashedPasswordFromDB)) {
-        $Message = "Success";
+        $Message = "pw WRONG";
     } else {
-        $Message = "Password incorrect";
+        $Message = "Success";
     }
 } else {
-    $Message = "No account found";
+    $Message = "No account yet";
 }
-
-$response = array("Message" => $Message);
+$response[] = array("Message" => $Message);
 echo json_encode($response);
-mysqli_close($conn);
-?>
